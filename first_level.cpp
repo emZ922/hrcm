@@ -9,9 +9,9 @@ using namespace std;
 
 struct Entity
 {
-    std::pair<int,int> position;
+    int position;
     int length;
-    bool matched;
+    string misMatched;
 };
 
 int hashFunction(const string &kMer){
@@ -21,10 +21,17 @@ int hashFunction(const string &kMer){
     }
     return hashValue;
 }
-
+#include <map>
 void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t)
 {
+    // Create a map to store the mapping from int to char
+    std::map<char, char> intToCharMap;
 
+    // Insert the mappings
+    intToCharMap['0'] = 'A';
+    intToCharMap['1'] = 'C';
+    intToCharMap['2'] = 'G';
+    intToCharMap['3'] = 'T';
     int l_max = k;
     int pos_max = 0;
 
@@ -53,7 +60,7 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
         hashValue = hashFunction(r_seq.substr(i, k));
         L[i] = H.count(hashValue) ? H[hashValue] : -1;
         H[hashValue] = i;
-        cout << i << "-ti iz r_seq " << hashValue <<  " " << r_seq.substr(i, i+k-1) << endl;
+        cout << i << "-ti iz r_seq " << hashValue <<  " " << r_seq.substr(i, k) << endl;
 
     }
 
@@ -69,7 +76,7 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
     {
         cout << "Index: " << i << ", Value: " << L[i] << endl;
     }
-
+    string misStr = "";
     int pre_pos = 0;
     for (int i = 0; i <= n_t - k; i++)
     {
@@ -86,29 +93,22 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
         int pos = H.count(hashValue) ? H[hashValue] : -1;
         cout << "Pos:" << pos << ",hash:" << hashValue << endl;
 
-        if (pos <= -1)
-        {
-            // Mismatched k-mer
-            Entity entity;
-            entity.position = std::make_pair(pos, i);
-            entity.length = k;
-            entity.matched = false;
-            matchedEntities.push_back(entity);
-        }
-        else
+        if (pos > -1)
         {
             l_max = -1;
             pos_max = -1;
             int j = pos;
+            int r_id = j + k;
+            int t_id = i + k;
             while (j != -1)
             {
                 // cout << pos << endl;
                 int l = k;
                 int p = pos;
-                int r_id = j + k;
-                int t_id = i + k;
+                r_id = j + k;
+                t_id = i + k;
 
-                while (t_id < n_t && r_id < r_seq.length() && t_seq[t_id++] == r_seq[r_id++] )
+                while (t_id < n_t && r_id < r_seq.length() && t_seq[t_id++] == r_seq[r_id++])
                 {
                     l++;
                 }
@@ -122,17 +122,25 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
                 j = L[j];
             }
             Entity entity;
-            entity.position = std::make_pair(pos_max, i);
+            entity.position = i;
             entity.length = l_max;
-            entity.matched = true;
+            t_id--; r_id--;
+            while (t_seq[t_id] != r_seq[r_id]) {
+                misStr += intToCharMap[t_seq[t_id]];
+                t_id++;r_id++;
+            }
+            entity.misMatched = misStr;
             matchedEntities.push_back(entity);
+            misStr = "";
+            cout <<t_id<<endl;
+            i = t_id-1;
         }
     }
     cout << "Output: matched entities (position, length, mismatched)" << endl;
     for (const auto &entity : matchedEntities)
     {
-        cout << "Position: " << entity.position.first << "," << entity.position.second << ", Length: " << entity.length << endl;
-        cout << "Matched: " << (entity.matched ? "true" : "false") << endl;
+        cout << "Position: " << entity.position << ", Length: " << entity.length << endl;
+        cout << "Mismatched: " << entity.misMatched << endl;
     }
 }
 
@@ -171,10 +179,10 @@ string replaceDNAChars(const string &sequence)
 
 int main()
 {
-    string r_seq = replaceDNAChars("AAGT");
-    string t_seq = replaceDNAChars("AAGAA");
+    string r_seq = replaceDNAChars("AGATGGGCCC");
+    string t_seq = replaceDNAChars("AGATGGTCCC");
 
-    firstLevelMatching(r_seq, 2, t_seq, t_seq.length());
+    firstLevelMatching(r_seq, 3, t_seq, t_seq.length());
 
     return 0;
 }
