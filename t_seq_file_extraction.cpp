@@ -10,6 +10,13 @@ struct CharInfo
     int position;
     int length;
 };
+
+struct SpecialChar
+{
+    int position;
+    char c;
+};
+
 using namespace std;
 #include <cstring> // For strlen
 void removeNewline(char *str)
@@ -59,9 +66,10 @@ void extractReferenceFileInfo(const char *&filename, int mt)
     lines += '\0';
     cout << "input:" << lines << endl;
     int lowerLen = 0;
-    int specialLen = 0;
     int nLen = 0;
-    int pos = 0;
+    int lowerPos = 0;
+    int nPos = 0;
+    int specialPos = 0;
     bool lowerFlag = false;
     bool specialFlag = false;
     bool nFlag = false;
@@ -70,14 +78,16 @@ void extractReferenceFileInfo(const char *&filename, int mt)
     int lowerStart = 0;
     int specialStart = 0;
     int nStart = 0;
+    bool isUpper = false;
     vector<CharInfo> lowercaseList;
     vector<CharInfo> nList;
-    vector<CharInfo> specialList;
+    vector<SpecialChar> specialList;
     for (int i = 0; i < mt; i++)
     {
-
+        isUpper = true;
         if (islower(lines[i]))
         {
+            isUpper = false;
             lines[i] = toupper(lines[i]);
             if (lowerFlag)
             {
@@ -87,41 +97,25 @@ void extractReferenceFileInfo(const char *&filename, int mt)
             {
                 lowerFlag = true;
                 lowerLen = 1;
-                pos = i - lowerStart;
+                lowerPos = i - lowerStart;
             }
         }
 
         if (lines[i] == 'A' | lines[i] == 'T' | lines[i] == 'C' | lines[i] == 'G')
         {
             t_seq[t_len++] = lines[i];
-            if (specialFlag)
-            {
-                specialStart = i;
-                specialFlag = false;
-                CharInfo obj;
-                obj.position = pos;
-                obj.length = lowerLen;
-                specialList.push_back(obj);
-            }
+
         }
         else
         {
             if (lines[i] == 'N')
             {
-                if (specialFlag)
-                {
-                    specialStart = i;
-                    specialFlag = false;
-                    CharInfo obj;
-                    obj.position = pos;
-                    obj.length = lowerLen;
-                    specialList.push_back(obj);
-                }
+
                 if (!nFlag)
                 {
                     nFlag = true;
                     nLen = 1;
-                    nStart = i;
+                    nPos = i - nStart;
                 }
                 else
                 {
@@ -130,24 +124,19 @@ void extractReferenceFileInfo(const char *&filename, int mt)
             }
             else
             {
-                if (!specialFlag)
-                {
-                    specialFlag = true;
-                    specialLen = 1;
-                    specialStart = i;
-                }
-                else
-                {
-                    specialLen++;
-                }
+                SpecialChar obj;
+                obj.position = i - 1- specialStart;
+                obj.c = lines[i];
+                specialList.push_back(obj);
+                specialStart = i;
             }
         }
-        if ((isupper(lines[i]) | i == mt - 1) && lowerFlag)
+        if ((isUpper | i == mt - 1) && lowerFlag)
         {
             lowerStart = i;
             lowerFlag = false;
             CharInfo obj;
-            obj.position = pos;
+            obj.position = lowerPos;
             obj.length = lowerLen;
             lowercaseList.push_back(obj);
         }
@@ -156,19 +145,11 @@ void extractReferenceFileInfo(const char *&filename, int mt)
             nStart = i;
             nFlag = false;
             CharInfo obj;
-            obj.position = pos;
-            obj.length = lowerLen;
+            obj.position = nPos;
+            obj.length = nLen;
             nList.push_back(obj);
         }
-        if ((i == (mt - 1)) && specialFlag)
-        {
-            specialStart = i;
-            specialFlag = false;
-            CharInfo obj;
-            obj.position = pos;
-            obj.length = lowerLen;
-            specialList.push_back(obj);
-        }
+
     }
     cout << lines.length() << endl;
     t_seq[t_len] = '\0';
@@ -178,15 +159,17 @@ void extractReferenceFileInfo(const char *&filename, int mt)
     {
         cout << "Position: " << item.position << ", Length: " << item.length << endl;
     }
+    cout << endl;
     cout << "N character:" << endl;
     for (const auto &item : nList)
     {
         cout << "Position: " << item.position << ", Length: " << item.length << endl;
     }
+    cout << endl;
     cout << "Special:" << endl;
     for (const auto &item : specialList)
     {
-        cout << "Position: " << item.position << ", Length: " << item.length << endl;
+        cout << "Position: " << item.position << ", Character: " << item.c << endl;
     }
 }
 
