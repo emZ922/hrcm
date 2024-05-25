@@ -8,7 +8,7 @@
 #include <map>
 #include <algorithm>
 #include <cstring> // For strlen
-
+#include <fstream> // For ofstream
 
 using namespace std;
 
@@ -72,7 +72,7 @@ void extractReferenceFileInfo(const char *&filename, int mr, string &r_seq, vect
     bool counting = false;
     int r_len = 0;
     int start = 0;
-    for (int i = 0; i < mr; i++) {
+    for (int i = 0; i < lines.length(); i++) {
         if (islower(lines[i])) {
             lines[i] = toupper(lines[i]);
             if (counting) {
@@ -95,7 +95,7 @@ void extractReferenceFileInfo(const char *&filename, int mr, string &r_seq, vect
         if (lines[i] == 'A' || lines[i] == 'T' || lines[i] == 'C' || lines[i] == 'G') {
             r_seq += lines[i];
         }
-        if (i == mr - 1 && counting) {
+        if (i == lines.length() - 1 && counting) {
             LowercaseChar obj;
             obj.position = pos;
             obj.length = l;
@@ -152,7 +152,7 @@ void extractTargetFileInfo(const char *&filename, int mt, string &t_seq, vector<
     int specialStart = 0;
     int nStart = 0;
     bool isUpper = false;
-    for (int i = 0; i < mt; i++) {
+    for (int i = 0; i < lines.length(); i++) {
         isUpper = true;
         if (islower(lines[i])) {
             isUpper = false;
@@ -185,7 +185,7 @@ void extractTargetFileInfo(const char *&filename, int mt, string &t_seq, vector<
                 specialStart = i;
             }
         }
-        if ((isUpper || i == mt - 1) && lowerFlag) {
+        if ((isUpper || i == lines.length() - 1) && lowerFlag) {
             lowerStart = i;
             lowerFlag = false;
             CharInfo obj;
@@ -193,7 +193,7 @@ void extractTargetFileInfo(const char *&filename, int mt, string &t_seq, vector<
             obj.length = lowerLen;
             lowercaseList.push_back(obj);
         }
-        if ((lines[i] != 'N' || i == mt - 1) && nFlag) {
+        if ((lines[i] != 'N' || i == lines.length() - 1) && nFlag) {
             nStart = i;
             nFlag = false;
             CharInfo obj;
@@ -395,7 +395,6 @@ void encodeSequenceInformation(const vector<Entity> &matchedEntities, vector<int
         previousPosition = entity.position;
 
         encodedData.push_back(entity.length);
-        // Optionally encode mismatched information if necessary
     }
 }
 
@@ -407,7 +406,19 @@ void encodeLowercaseInformation(const vector<Entity> &matchedEntities, vector<in
         previousPosition = entity.position;
 
         encodedData.push_back(entity.length);
-        // Optionally encode mismatched information if necessary
+    }
+}
+
+void encodeAdditionalInformation(const vector<CharInfo> &charInfoList, vector<int> &encodedData) {
+    for (const auto &info : charInfoList) {
+        encodedData.push_back(info.position);
+        encodedData.push_back(info.length);
+    }
+}
+
+void encodeSpecialCharacters(const vector<SpecialChar> &specialList, vector<pair<int, char>> &encodedSpecialChars) {
+    for (const auto &special : specialList) {
+        encodedSpecialChars.push_back(make_pair(special.position, special.c));
     }
 }
 
@@ -467,6 +478,37 @@ void lowercaseMatching(const vector<LowercaseChar> &ref_lowercaseList, const vec
     }
 }
 
+// Function to write encoded data to a file
+void writeEncodedDataToFile(const vector<int> &encodedData, const vector<pair<int, char>> &encodedSpecialChars, const vector<CharInfo> &nList, const vector<LowercaseChar> &lowercaseList, const string &filename) {
+    ofstream outFile(filename, ios::binary);
+    if (!outFile) {
+        cerr << "Error opening file for writing: " << filename << endl;
+        exit(1);
+    }
+
+    size_t size = encodedData.size();
+    outFile.write(reinterpret_cast<const char*>(&size), sizeof(size_t));
+    outFile.write(reinterpret_cast<const char*>(encodedData.data()), size * sizeof(int));
+
+    size = encodedSpecialChars.size();
+    outFile.write(reinterpret_cast<const char*>(&size), sizeof(size_t));
+    for (const auto &special : encodedSpecialChars) {
+        outFile.write(reinterpret_cast<const char*>(&special.first), sizeof(int));
+        outFile.write(reinterpret_cast<const char*>(&special.second), sizeof(char));
+    }
+
+    size = nList.size();
+    outFile.write(reinterpret_cast<const char*>(&size), sizeof(size_t));
+    outFile.write(reinterpret_cast<const char*>(nList.data()), size * sizeof(CharInfo));
+
+    size = lowercaseList.size();
+    outFile.write(reinterpret_cast<const char*>(&size), sizeof(size_t));
+    outFile.write(reinterpret_cast<const char*>(lowercaseList.data()), size * sizeof(LowercaseChar));
+
+    outFile.close();
+    cout << "Encoded data written to " << filename << endl;
+}
+
 int main() {
     const char *ref_filename = "ref_seq.fa";
     const char *t_filename = "t_seq.fa";
@@ -482,8 +524,6 @@ int main() {
     // Extract sequence information
     extractReferenceFileInfo(ref_filename, mr, r_seq, r_lowercaseList);
     extractTargetFileInfo(t_filename, mt, t_seq, t_lowercaseList, t_nList, t_specialList);
-
-    // Convert DNA chars to integers for matching
     string r_seq_int = replaceDNAChars(r_seq);
     string t_seq_int = replaceDNAChars(t_seq);
 
@@ -505,11 +545,9 @@ int main() {
         cout << "Position: " << entity.position << ", Length: " << entity.length << endl;
         cout << "Mismatched: " << entity.misMatched << endl;
     }
-
-    // Second level matching
+    //Second level matching
     secondLevelMatching(matchedEntities1, matchedEntities2, 3);
 
-    // Lowercase character information matching
     vector<Entity> matchedLowercaseEntities;
     lowercaseMatching(r_lowercaseList, t_lowercaseList, matchedLowercaseEntities);
 
@@ -517,8 +555,12 @@ int main() {
     vector<int> encodedData;
     encodeSequenceInformation(matchedEntities1, encodedData);
     encodeLowercaseInformation(matchedLowercaseEntities, encodedData);
+    encodeAdditionalInformation(t_nList, encodedData);
+    vector<pair<int, char>> encodedSpecialChars;
+    encodeSpecialCharacters(t_specialList, encodedSpecialChars);
 
-    // Output encoded data for verification
+    writeEncodedDataToFile(encodedData, encodedSpecialChars, t_nList, r_lowercaseList, "compressed_data.bin");
+
     cout << "Encoded Data:" << endl;
     for (const auto &data : encodedData) {
         cout << data << " ";
@@ -527,3 +569,4 @@ int main() {
 
     return 0;
 }
+
