@@ -89,17 +89,18 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
         //     hashValue += c - '0';
         // }
         hashValue = hashFunction(kMer);
-        cout << i << "-ti iz t_seq " << hashValue <<  " " << kMer << endl;
+        //cout << i << "-ti iz t_seq " << hashValue <<  " " << kMer << endl;
         int pos = H.count(hashValue) ? H[hashValue] : -1;
-        cout << "Pos:" << pos << ",hash:" << hashValue << endl;
+        //cout << "Pos:" << pos << ",hash:" << hashValue << endl;
 
         if (pos > -1)
         {
+            cout << r_seq.substr(i,k) << " " << t_seq.substr(i,k) << endl;
             l_max = -1;
             pos_max = -1;
             int j = pos;
-            int r_id = j + k;
-            int t_id = i + k;
+            int r_id = j+k;
+            int t_id = i+k;
             while (j != -1)
             {
                 // cout << pos << endl;
@@ -109,7 +110,7 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
                 t_id = i + k;
 
                 while (t_id < n_t && r_id < r_seq.length() && t_seq[t_id++] == r_seq[r_id++])
-                {
+                { 
                     l++;
                 }
 
@@ -124,15 +125,15 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
             Entity entity;
             entity.position = i;
             entity.length = l_max;
-            t_id--; r_id--;
-            while (t_seq[t_id] != r_seq[r_id]) {
+            r_id = pos_max + l_max;
+            t_id = i + l_max;
+            while (t_seq[t_id] != r_seq[r_id] && t_id < t_seq.length() && r_id < r_seq.length()) {
                 misStr += intToCharMap[t_seq[t_id]];
                 t_id++;r_id++;
             }
             entity.misMatched = misStr;
             matchedEntities.push_back(entity);
             misStr = "";
-            cout <<t_id<<endl;
             i = t_id-1;
         }
     }
@@ -179,10 +180,10 @@ string replaceDNAChars(const string &sequence)
 
 int main()
 {
-    string r_seq = replaceDNAChars("AGATGGGCCC");
-    string t_seq = replaceDNAChars("AGATGGTCCC");
+    string r_seq = replaceDNAChars("AGATGGGCCCTTTAGGTATT");
+    string t_seq = replaceDNAChars("AGCTGGTCCCTGAAGGAATC");
 
-    firstLevelMatching(r_seq, 3, t_seq, t_seq.length());
+    firstLevelMatching(r_seq, 2, t_seq, t_seq.length()-1);
 
     return 0;
 }
