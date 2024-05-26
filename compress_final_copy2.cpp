@@ -362,7 +362,7 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
                 r_id = j + k;
                 t_id = i + k;
 
-                while (t_id < n_t && r_id < r_seq.length() && t_seq[t_id++] == r_seq[r_id++])
+                while (t_id < n_t && r_id < r_seq.length() && t_id < t_seq.length() && t_seq[t_id++] == r_seq[r_id++])
                 {
                     l++;
                 }
@@ -378,9 +378,9 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
             Entity entity;
             entity.position = i;
             entity.length = l_max;
-            t_id--;
-            r_id--;
-            while (t_seq[t_id] != r_seq[r_id])
+            t_id = i + l_max;
+            r_id = pos_max + l_max;
+            while (t_seq[t_id] != r_seq[r_id] && r_id < r_seq.length() && t_id < t_seq.length())
             {
                 misStr += intToCharMap[t_seq[t_id]];
                 t_id++;
@@ -632,8 +632,8 @@ int main()
     vector<Entity> matchedEntities1;
     vector<Entity> matchedEntities2;
 
-    firstLevelMatching(r_seq_int, 3, t_seq_int, t_seq_int.length(), matchedEntities1);
-    firstLevelMatching(r_seq_int, 3, t_seq_int, t_seq_int.length(), matchedEntities2);
+    firstLevelMatching(r_seq_int, 2, t_seq_int, t_seq_int.length(), matchedEntities1);
+    firstLevelMatching(r_seq_int, 2, t_seq_int, t_seq_int.length(), matchedEntities2);
 
     cout << "First Level Matching for Sequence 1:" << endl;
     for (const auto &entity : matchedEntities1)
