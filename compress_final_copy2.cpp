@@ -83,7 +83,7 @@ void extractReferenceFileInfo(const char *&filename, int mr, string &r_seq, vect
     cout << "input:" << lines << endl;
     int l = 0;
     int pos = 0;
-    bool counting = false;
+    bool counting = false; // note whether we are counting lowercase characters
     int r_len = 0;
     int start = 0;
     for (int i = 0; i < lines.length(); i++)
@@ -149,7 +149,7 @@ void extractTargetFileInfo(const char *&filename, int mt, string &t_seq, vector<
     {
         if (line[strlen(line) - 1] == '\n')
         {
-            line[strlen(line) - 1] = '\0';
+            line[strlen(line) - 1] = '\0'; // remove newline
         }
         id += line;
     }
@@ -170,20 +170,28 @@ void extractTargetFileInfo(const char *&filename, int mt, string &t_seq, vector<
     fclose(fp);
 
     cout << "id:" << id << endl;
-    lines += '\0';
+    lines += '\0'; // terminate string
     cout << "input:" << lines << endl;
+
     int lowerLen = 0;
     int nLen = 0;
+    int t_len = 0;
+
+    // starting position for current sequence of certain type
     int lowerPos = 0;
     int nPos = 0;
     int specialPos = 0;
+
+    // flags determine whether we are counting certain type of characters
     bool lowerFlag = false;
     bool specialFlag = false;
     bool nFlag = false;
-    int t_len = 0;
+
+    // starting position for last sequence of certain type
     int lowerStart = 0;
     int specialStart = 0;
     int nStart = 0;
+
     bool isUpper = false;
     for (int i = 0; i < lines.length() - 1; i++)
     {
@@ -251,7 +259,6 @@ void extractTargetFileInfo(const char *&filename, int mt, string &t_seq, vector<
             nList.push_back(obj);
         }
     }
-    cout << lines.length() << endl;
     cout << "t_seq:" << t_seq << endl;
     cout << "Lowercase:" << endl;
     for (const auto &item : lowercaseList)
@@ -275,6 +282,7 @@ void extractTargetFileInfo(const char *&filename, int mt, string &t_seq, vector<
 // Hash function for k-mers
 int hashFunction(const string &kMer)
 {
+    // Calculate quaternary value of k-mer
     int hashValue = kMer[0] - '0';
     for (int i = 1; i < kMer.length(); i++)
     {
@@ -329,7 +337,7 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
     int hashValue = 0;
     string kMer = r_seq.substr(0, k);
     hashValue = hashFunction(kMer);
-    L[0] = H.count(0) ? H[0] : -1;
+    L[0] = H.count(0) ? H[0] : -1; // Act as if all H values are -1
     H[hashValue] = 0;
 
     // Create hash table for reference B sequence
@@ -341,13 +349,15 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
     }
 
     string misStr = "";
+    // Iterate over t_seq
     for (int i = 0; i <= n_t - k; i++)
     {
         hashValue = 0;
         kMer = t_seq.substr(i, k);
         hashValue = hashFunction(kMer);
-        int pos = H.count(hashValue) ? H[hashValue] : -1;
 
+        // Check if k-mer's hash value has appeared before
+        int pos = H.count(hashValue) ? H[hashValue] : -1;
         if (pos > -1)
         {
             l_max = -1;
@@ -373,11 +383,13 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
                     pos_max = j;
                 }
 
-                j = L[j];
+                j = L[j]; // Check if there is another occurance of same hash value
             }
             Entity entity;
             entity.position = i;
             entity.length = l_max;
+
+            // Find mismatched string
             t_id = i + l_max;
             r_id = pos_max + l_max;
             while (t_seq[t_id] != r_seq[r_id] && r_id < r_seq.length() && t_id < t_seq.length())
