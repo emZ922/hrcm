@@ -143,10 +143,13 @@ void extractTargetFileInfo(const char *&filename, int mt, string &t_seq, vector<
         printf("Error: fail to open file %s.\n", filename);
         exit(-1);
     }
-    char line[1024];
+    const size_t bufferSize = 1024;
+    char line[bufferSize];
     string id = "";
+    cout << filename << endl;
     if (fgets(line, sizeof(line), fp) != NULL)
     {
+        cout << "dd" << endl;
         if (line[strlen(line) - 1] == '\n')
         {
             line[strlen(line) - 1] = '\0'; // remove newline
@@ -157,6 +160,7 @@ void extractTargetFileInfo(const char *&filename, int mt, string &t_seq, vector<
     {
         printf("Error: fail to read a line from file %s.\n", filename);
     }
+    cout << "b" << endl;
     string lines = "";
     while (fgets(line, sizeof(line), fp) != NULL)
     {
@@ -833,72 +837,86 @@ void writeDecompressedSequenceToFile(const string &filename, const string &decom
 int main()
 {
     const char *ref_filename = "ref_seq.fa";
-    const char *t_filename = "t_seq.fa";
+    vector<const char *> t_filename = {"t_seq.fa", "p_seq.fa"};
     int mr = 50;
     int mt = 50;
     string r_seq;
     vector<LowercaseChar> r_lowercaseList;
-    string t_seq;
-    vector<CharInfo> t_lowercaseList;
-    vector<CharInfo> t_nList;
-    vector<SpecialChar> t_specialList;
+    vector<string> t_seq_vec;
+    vector<vector<CharInfo>> t_lowercaseList_vec;
+    vector<vector<CharInfo>> t_nList_vec;
+    vector<vector<SpecialChar>> t_specialList_vec;
 
     // Extract sequence information
     extractReferenceFileInfo(ref_filename, mr, r_seq, r_lowercaseList);
-    extractTargetFileInfo(t_filename, mt, t_seq, t_lowercaseList, t_nList, t_specialList);
-
-    // Convert DNA chars to integers for matching
     string r_seq_int = replaceDNAChars(r_seq);
-    string t_seq_int = replaceDNAChars(t_seq);
-
-    // First level matching
-    vector<Entity> matchedEntities1;
-    // vector<Entity> matchedEntities2;
-
-    firstLevelMatching(r_seq_int, 2, t_seq_int, t_seq_int.length(), matchedEntities1);
-    // firstLevelMatching(r_seq_int, 2, t_seq_int, t_seq_int.length(), matchedEntities2);
-
-    cout << "First Level Matching for Sequence 1:" << endl;
-    for (const auto &entity : matchedEntities1)
+    vector<string> t_seq_int_vec;
+    for (int i = 0; i < 1; i++)
     {
-        cout << "Position: " << entity.position << ", Length: " << entity.length << endl;
-        cout << "Mismatched: " << entity.misMatched << endl;
+        string t_seq;
+        vector<CharInfo> t_lowercaseList;
+        vector<CharInfo> t_nList;
+        vector<SpecialChar> t_specialList;
+        string t_seq_int;
+        extractTargetFileInfo(t_filename[i], mt, t_seq, t_lowercaseList, t_nList, t_specialList);
+        cout << "end" <<endl;
+        t_lowercaseList_vec.push_back(t_lowercaseList);
+        cout <<"a" <<endl;
+        t_nList_vec.push_back(t_nList);
+        t_specialList_vec.push_back(t_specialList);
+        // Convert DNA chars to integers for matching
+        t_seq_int_vec.push_back(replaceDNAChars(t_seq));
+        // First level matching
+        cout <<3<<endl;
+        // vector<Entity> matchedEntities2;
+        if (i == 0)
+        {
+            vector<Entity> matchedEntities1;
+            cout <<34<<endl;
+            firstLevelMatching(r_seq_int, 2, t_seq_int_vec[i], t_seq_int_vec[i].length(), matchedEntities1);
+
+            cout << "First Level Matching for Sequence 1:" << endl;
+            for (const auto &entity : matchedEntities1)
+            {
+                cout << "Position: " << entity.position << ", Length: " << entity.length << endl;
+                cout << "Mismatched: " << entity.misMatched << endl;
+            }
+
+            // cout << "First Level Matching for Sequence 2:" << endl;
+            // for (const auto &entity : matchedEntities2)
+            // {
+            //     cout << "Position: " << entity.position << ", Length: " << entity.length << endl;
+            //     cout << "Mismatched: " << entity.misMatched << endl;
+            // }
+
+            // Second level matching
+            // secondLevelMatching(matchedEntities1, matchedEntities2, 3);
+
+            // Lowercase character information matching
+            vector<Entity> matchedLowercaseEntities;
+            lowercaseMatching(r_lowercaseList, t_lowercaseList, matchedLowercaseEntities);
+
+            // Sequence information encoding
+            vector<tuple<int, int, string>> encodedData;
+            encodeSequenceInformation(matchedEntities1, encodedData);
+            // encodeLowercaseInformation(matchedLowercaseEntities, encodedData);
+            // encodeAdditionalInformation(t_nList, encodedData);
+            vector<pair<int, char>> encodedSpecialChars;
+            encodeSpecialCharacters(t_specialList, encodedSpecialChars);
+
+            // Write encoded data to file
+            writeEncodedDataToFile(encodedData, encodedSpecialChars, t_nList, t_lowercaseList, r_seq, "compressed_data"+to_string(i)+".bin");
+
+            cout << "Encoded Data:" << endl;
+
+            // Decompression
+            string decompressedSequence;
+            //decompressData("compressed_data"+to_string(i)+".bin", decompressedSequence, mt);
+            // writeDecompressedSequenceToFile("decompressed_sequence.fa", decompressedSequence);
+
+            // Output decompressed sequence for verification
+            //cout << "Decompressed Sequence: " << decompressedSequence << endl;
+        }
     }
-
-    // cout << "First Level Matching for Sequence 2:" << endl;
-    // for (const auto &entity : matchedEntities2)
-    // {
-    //     cout << "Position: " << entity.position << ", Length: " << entity.length << endl;
-    //     cout << "Mismatched: " << entity.misMatched << endl;
-    // }
-
-    // Second level matching
-    // secondLevelMatching(matchedEntities1, matchedEntities2, 3);
-
-    // Lowercase character information matching
-    vector<Entity> matchedLowercaseEntities;
-    lowercaseMatching(r_lowercaseList, t_lowercaseList, matchedLowercaseEntities);
-
-    // Sequence information encoding
-    vector<tuple<int, int, string>> encodedData;
-    encodeSequenceInformation(matchedEntities1, encodedData);
-    // encodeLowercaseInformation(matchedLowercaseEntities, encodedData);
-    // encodeAdditionalInformation(t_nList, encodedData);
-    vector<pair<int, char>> encodedSpecialChars;
-    encodeSpecialCharacters(t_specialList, encodedSpecialChars);
-
-    // Write encoded data to file
-    writeEncodedDataToFile(encodedData, encodedSpecialChars, t_nList, t_lowercaseList, r_seq, "compressed_data.bin");
-
-    cout << "Encoded Data:" << endl;
-
-    // Decompression
-    string decompressedSequence;
-    decompressData("compressed_data.bin", decompressedSequence, mt);
-    // writeDecompressedSequenceToFile("decompressed_sequence.fa", decompressedSequence);
-
-    // Output decompressed sequence for verification
-    cout << "Decompressed Sequence: " << decompressedSequence << endl;
-
     return 0;
 }
