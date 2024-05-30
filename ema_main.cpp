@@ -237,6 +237,7 @@ void extractTargetFileInfo(const char *&filename, int mt, string &t_seq, vector<
             {
                 if (lines[i] != '\0')
                 {
+                    
                     SpecialChar obj;
                     cout <<"spec "<<lines[i]<<" "<<i<<" "<< lines.length()<<" "<<specialPos;
                     obj.position = specialPos;
@@ -263,7 +264,7 @@ void extractTargetFileInfo(const char *&filename, int mt, string &t_seq, vector<
             obj.position = nStart;
             obj.length = nLen;
             nList.push_back(obj);
-            nPos = 0;
+            nPos = 1;
         }
     }
     cout << "t_seq:" << t_seq << endl;
@@ -829,7 +830,7 @@ void decompressData(const string &encodedFilename, string &decompressedSequence,
     }
     cout << "d:" << decompressedSequence << endl;
     //cout << "o:" << "AGCTGGGCCCTTaaggtttnnnXXXTTTCCCGGGNNNaaaTTTccctttg1" << endl;
-    cout << "o:" << "AGCTGGGCCCTTccggtttnnnXXXTTXCCCAAANNNaaaTTTccctttg2" << endl;
+    cout << "o:" << "GGCTGXGCCggtttnTTXCNNNaaaTTTcc2" << endl;
 }
 
 // Function to write decompressed sequence to a .fa file
