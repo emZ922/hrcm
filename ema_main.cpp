@@ -175,7 +175,6 @@ void extractTargetFileInfo(const char *&filename, int mt, string &t_seq, vector<
 
     int lowerLen = 0;
     int nLen = 0;
-    int t_len = 0;
 
     // starting position for current sequence of certain type
     int lowerPos = 0;
@@ -215,16 +214,19 @@ void extractTargetFileInfo(const char *&filename, int mt, string &t_seq, vector<
         if (lines[i] == 'A' || lines[i] == 'T' || lines[i] == 'C' || lines[i] == 'G')
         {
             t_seq += lines[i];
+            nPos++;
+            specialPos++;
         }
         else
         {
             if (lines[i] == 'N')
             {
+                specialPos++;
                 if (!nFlag)
                 {
                     nFlag = true;
                     nLen = 1;
-                    nPos = i - max(nStart, specialStart);
+                    nStart = nPos; // save current position as start
                 }
                 else
                 {
@@ -236,10 +238,11 @@ void extractTargetFileInfo(const char *&filename, int mt, string &t_seq, vector<
                 if (lines[i] != '\0')
                 {
                     SpecialChar obj;
-                    obj.position = i - specialStart;
+                    cout <<"spec "<<lines[i]<<" "<<i<<" "<< lines.length()<<" "<<specialPos;
+                    obj.position = specialPos;
                     obj.c = lines[i];
                     specialList.push_back(obj);
-                    specialStart = i + 1;
+                    specialPos=0;
                 }
             }
         }
@@ -254,12 +257,13 @@ void extractTargetFileInfo(const char *&filename, int mt, string &t_seq, vector<
         }
         if ((lines[i] != 'N' || i == lines.length() - 1) && nFlag)
         {
-            nStart = i;
+            //nStart = i;
             nFlag = false;
             CharInfo obj;
-            obj.position = nPos;
+            obj.position = nStart;
             obj.length = nLen;
             nList.push_back(obj);
+            nPos = 0;
         }
     }
     cout << "t_seq:" << t_seq << endl;
@@ -360,6 +364,7 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
 
         // Check if k-mer's hash value has appeared before
         int pos = H.count(hashValue) ? H[hashValue] : -1;
+        cout << kMer <<endl;
         if (pos > -1)
         {
             l_max = -1;
@@ -388,22 +393,34 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
                 j = L[j]; // Check if there is another occurance of same hash value
             }
             Entity entity;
-            entity.position = i;
+            entity.position = pos_max;
             entity.length = l_max;
 
             // Find mismatched string
             t_id = i + l_max;
             r_id = pos_max + l_max;
-            while (t_seq[t_id] != r_seq[r_id] && r_id < r_seq.length() && t_id < t_seq.length())
+            
+            while (t_seq[t_id] != r_seq[r_id] && r_id < r_seq.length() && t_id < t_seq.length()) // find first different letter
             {
                 misStr += intToCharMap[t_seq[t_id]];
                 t_id++;
                 r_id++;
+            
             }
+
             entity.misMatched = misStr;
             matchedEntities.push_back(entity);
             misStr = "";
             i = t_id - 1;
+        } else {
+            cout <<kMer << endl;
+            //mismatched string of length k
+            Entity entity;
+            entity.misMatched = kMer;
+            entity.position = -1;
+            entity.length = 0;
+            matchedEntities.push_back(entity);
+            i +=k;
         }
     }
 }
@@ -733,18 +750,19 @@ void decompressData(const string &encodedFilename, string &decompressedSequence,
     for (const auto &entity : matchedEntities)
     {
         cout << "start" << start << endl;
+        read = entity.position;
         for (int i = 0; i < entity.length; i++)
         {
-            tempSeq[start + i] = referenceSequence[read++];
+            tempSeq[start++] = referenceSequence[read+i];
         }
-        start = start + entity.length;
+        //start = start + entity.length;
         // Handle mismatched portion if necessary
         for (int j = 0; j < entity.misMatched.length(); j++)
         {
-            tempSeq[start + j] = entity.misMatched[j];
+            tempSeq[start++] = entity.misMatched[j];
         }
-        read = read + entity.misMatched.length();
-        start = start + entity.misMatched.length();
+        //read = read + entity.misMatched.length();
+        //start = start + entity.misMatched.length();
     }
     cout << "f:" << tempSeq << endl;
     // Add 'N' characters
@@ -810,7 +828,8 @@ void decompressData(const string &encodedFilename, string &decompressedSequence,
         start = start + lowercase.length;
     }
     cout << "d:" << decompressedSequence << endl;
-    cout << "o:" << "AGCTGGGCCCTTaaggtttnnnXXXTTTCCCGGGNNNaaaTTTccctttg" << endl;
+    //cout << "o:" << "AGCTGGGCCCTTaaggtttnnnXXXTTTCCCGGGNNNaaaTTTccctttg1" << endl;
+    cout << "o:" << "AGCTGGGCCCTTccggtttnnnXXXTTXCCCAAANNNaaaTTTccctttg2" << endl;
 }
 
 // Function to write decompressed sequence to a .fa file
@@ -823,7 +842,6 @@ void writeDecompressedSequenceToFile(const string &filename, const string &decom
         exit(1);
     }
 
-    // outFile << ">decompressed_sequence" << endl;
     outFile << decompressedSequence << endl;
 
     outFile.close();
@@ -833,30 +851,44 @@ void writeDecompressedSequenceToFile(const string &filename, const string &decom
 int main()
 {
     const char *ref_filename = "ref_seq.fa";
-    const char *t_filename = "t_seq.fa";
+    vector<const char *> t_filename = {"t_seq.fa", "p_seq.fa"};
     int mr = 50;
     int mt = 50;
+    int i = 1;
     string r_seq;
     vector<LowercaseChar> r_lowercaseList;
+    vector<string> t_seq_vec;
+    vector<string> t_seq_int_vec;
+    vector<vector<CharInfo>> t_lowercaseList_vec;
+    vector<vector<CharInfo>> t_nList_vec;
+    vector<vector<SpecialChar>> t_specialList_vec;
+
+    // Extract sequence information
+    extractReferenceFileInfo(ref_filename, mr, r_seq, r_lowercaseList);
+
+    // Convert DNA chars to integers for matching
+    string r_seq_int = replaceDNAChars(r_seq);
+
+    // for loop
+    // for (i = 0; i < 2; i++)
+    //{
     string t_seq;
     vector<CharInfo> t_lowercaseList;
     vector<CharInfo> t_nList;
     vector<SpecialChar> t_specialList;
-
-    // Extract sequence information
-    extractReferenceFileInfo(ref_filename, mr, r_seq, r_lowercaseList);
-    extractTargetFileInfo(t_filename, mt, t_seq, t_lowercaseList, t_nList, t_specialList);
-
-    // Convert DNA chars to integers for matching
-    string r_seq_int = replaceDNAChars(r_seq);
+    extractTargetFileInfo(t_filename[i], mt, t_seq, t_lowercaseList, t_nList, t_specialList);
     string t_seq_int = replaceDNAChars(t_seq);
-
     // First level matching
     vector<Entity> matchedEntities1;
-    // vector<Entity> matchedEntities2;
+
+    cout << "end" << endl;
+    t_lowercaseList_vec.push_back(t_lowercaseList);
+    cout << "a" << endl;
+    t_nList_vec.push_back(t_nList);
+    t_specialList_vec.push_back(t_specialList);
+    t_seq_int_vec.push_back(t_seq_int);
 
     firstLevelMatching(r_seq_int, 2, t_seq_int, t_seq_int.length(), matchedEntities1);
-    // firstLevelMatching(r_seq_int, 2, t_seq_int, t_seq_int.length(), matchedEntities2);
 
     cout << "First Level Matching for Sequence 1:" << endl;
     for (const auto &entity : matchedEntities1)
@@ -864,16 +896,6 @@ int main()
         cout << "Position: " << entity.position << ", Length: " << entity.length << endl;
         cout << "Mismatched: " << entity.misMatched << endl;
     }
-
-    // cout << "First Level Matching for Sequence 2:" << endl;
-    // for (const auto &entity : matchedEntities2)
-    // {
-    //     cout << "Position: " << entity.position << ", Length: " << entity.length << endl;
-    //     cout << "Mismatched: " << entity.misMatched << endl;
-    // }
-
-    // Second level matching
-    // secondLevelMatching(matchedEntities1, matchedEntities2, 3);
 
     // Lowercase character information matching
     vector<Entity> matchedLowercaseEntities;
@@ -899,6 +921,6 @@ int main()
 
     // Output decompressed sequence for verification
     cout << "Decompressed Sequence: " << decompressedSequence << endl;
-
+    //}
     return 0;
 }
