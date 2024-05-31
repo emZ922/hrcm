@@ -6,6 +6,7 @@
 #include <utility>
 #include <cctype>
 #include <cstdlib>
+#include <string.h>
 
 using namespace std;
 
@@ -106,7 +107,7 @@ void decodeSequenceInformation(const vector<tuple<int, int, string>> &encodedDat
 }
 
 // Function to decompress data
-void decompressData(const string &encodedFilename, const char *ref_filename, string &decompressedSequence, int mt)
+string decompressData(const string &encodedFilename, const char *ref_filename, int mt)
 {
     vector<tuple<int, int, string>> encodedData;
     vector<pair<int, char>> encodedSpecialChars;
@@ -114,81 +115,78 @@ void decompressData(const string &encodedFilename, const char *ref_filename, str
     vector<CharInfo> lowercaseList;
     string referenceSequence;
     readEncodedDataFromFile(encodedFilename, encodedData, encodedSpecialChars, nList, lowercaseList, referenceSequence);
-    cout << "encdata" << endl
-         << referenceSequence << endl;
 
     // Decode sequence information
     vector<Entity> matchedEntities;
     decodeSequenceInformation(encodedData, matchedEntities);
+    string decompressedSequence(mt + 1, '?');
 
     // Determine the length of the decompressed sequence
-    int maxLength = 0;
-    string tempSeq;
-    tempSeq.resize(mt, '?');
-    int t_len = 50;
-    for (const auto &entity : matchedEntities)
-    {
-        cout << entity.position << " " << entity.length << " " << entity.misMatched << endl;
-        maxLength = max(maxLength, entity.position + entity.length);
-    }
-    decompressedSequence.resize(mt, '?');
+    char *tempSeq = new char[mt + 1];
 
-    cout << decompressedSequence.length() << endl;
-    // Reconstruct the base sequence using the matched entities
+    // decompressedSequence.resize(mt+1, '?');
+
+    //  Reconstruct the base sequence using the matched entities
     int start = 0;
     int read = 0;
+    int i, j;
     for (const auto &entity : matchedEntities)
     {
         read = entity.position;
-        for (int i = 0; i < entity.length; i++)
+        for (i = 0; i < entity.length; i++)
         {
             tempSeq[start++] = referenceSequence[read + i];
         }
         // start = start + entity.length;
         //  Handle mismatched portion if necessary
-        for (int j = 0; j < entity.misMatched.length(); j++)
+        for (j = 0; j < entity.misMatched.length(); j++)
         {
             tempSeq[start++] = entity.misMatched[j];
         }
         // read = read + entity.misMatched.length();
         // start = start + entity.misMatched.length();
     }
-    cout << "f:" << tempSeq << endl;
-    // Add 'N' characters
+    tempSeq[start] = '\0';
+
+    // cout << "f:" << tempSeq << endl;
+    //  Add 'N' characters
     start = 0;
     read = 0;
-    char *str = new char[mt * sizeof(char)];
+    char *str = new char[mt + 1];
     for (const auto &nChar : nList)
     {
         // cout << nChar.position << "N" << nChar.length << endl;
-        for (int i = 0; i < nChar.position; i++)
+        for (i = 0; i < nChar.position; i++)
         {
             str[start++] = tempSeq[read++];
         }
         // start = start + nChar.position;
-        for (int i = 0; i < nChar.length; i++)
+        for (i = 0; i < nChar.length; i++)
         {
             str[start++] = 'N';
         }
         // start = start + nChar.length;
     }
     // cout << str << tempSeq.length() <<read  <<endl;
-    for (int i = read; i < tempSeq.length(); i++)
+    for (i = read; i < mt; i++)
     {
         str[start++] = tempSeq[i];
         // cout << i <<endl;
     }
-    str[start] = '\0';
+    // str[start] = '\0';
     int str_len = start;
-    cout << "N:" << str << endl;
-    // Reconstruct special characters
+
+    str[mt] = '\0';
+
+    // cout << "N:" << str << endl;
+    //  Reconstruct special characters
     int pos = 0;
     start = 0;
     read = 0;
     for (const auto &special : encodedSpecialChars)
     {
         // cout << decompressedSequence<<endl;
-        for (int i = 0; i < special.first; i++)
+        for (i = 0; i < special.first; i++)
         {
             // cout << str[read] <<endl;
             decompressedSequence[start + i] = str[read++];
@@ -198,27 +196,36 @@ void decompressData(const string &encodedFilename, const char *ref_filename, str
         // cout << special.first << special.second << endl;
     }
 
-    for (int i = read; i < str_len; i++)
+    for (i = read; i < str_len; i++)
     {
         decompressedSequence[start++] = str[i];
         // cout << i <<endl;
     }
-    cout << "s:" << decompressedSequence << endl;
-    // Reconstruct lowercase characters
+
+    // cout << "s:" << decompressedSequence << endl;
+    //  Reconstruct lowercase characters
+
     start = 0;
     for (const auto &lowercase : lowercaseList)
     {
         // cout << lowercase.length << "L" << lowercase.position << endl;
         start = start + lowercase.position;
-        for (int i = 0; i < lowercase.length; i++)
+        for (i = 0; i < lowercase.length; i++)
         {
             decompressedSequence[start + i] = tolower(decompressedSequence[start + i]);
         }
         start = start + lowercase.length;
     }
+    decompressedSequence[mt] = '\0';
+
+
     cout << "o:" << "GGCTGXGCCggtttnAAAGGnnXXXTTXCNNNaaaTTTccACGTTTCTGT" << endl;
     cout << "d:" << decompressedSequence << endl;
     cout << "o:" << "AGCTGGGCCCTTaaggtttnnnXXXTTTCCCGGGNNNaaaTTTccctttg" << endl;
+
+    delete[] str;
+
+    return decompressedSequence;
 }
 
 // Function to write decompressed sequence to a .fa file
@@ -239,9 +246,9 @@ void writeDecompressedSequenceToFile(const string &filename, const string &decom
 
 void decompressSingleFile(const char *ref_filename, const char *tar_filename, int mt)
 {
-    string decompressedSequence;
     cout << ref_filename << endl;
-    decompressData(tar_filename, ref_filename, decompressedSequence, mt);
+    string decompressedSequence = decompressData(tar_filename, ref_filename, mt);
+    cout << decompressedSequence<<endl;
     string output_filename = string(tar_filename).substr(0, string(tar_filename).find_last_of('.')) + ".fasta";
     writeDecompressedSequenceToFile(output_filename, decompressedSequence);
 }
@@ -291,7 +298,6 @@ int main(int argc, char *argv[])
         else if (string(argv[4]) == "-f")
         {
             const char *file_list = argv[5];
-            cout << 8 << endl;
             decompressMultipleFiles(ref_filename, file_list, mt);
         }
         else
