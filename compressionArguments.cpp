@@ -236,13 +236,13 @@ void extractTargetFileInfo(string filename, int mt, string &t_seq, vector<CharIn
             {
                 if (lines[i] != '\0')
                 {
-                    
+
                     SpecialChar obj;
-                    cout <<"spec "<<lines[i]<<" "<<i<<" "<< lines.length()<<" "<<specialPos;
+                    cout << "spec " << lines[i] << " " << i << " " << lines.length() << " " << specialPos;
                     obj.position = specialPos;
                     obj.c = lines[i];
                     specialList.push_back(obj);
-                    specialPos=0;
+                    specialPos = 0;
                 }
             }
         }
@@ -257,13 +257,20 @@ void extractTargetFileInfo(string filename, int mt, string &t_seq, vector<CharIn
         }
         if ((lines[i] != 'N' || i == lines.length() - 1) && nFlag)
         {
-            //nStart = i;
+            // nStart = i;
             nFlag = false;
             CharInfo obj;
             obj.position = nStart;
             obj.length = nLen;
             nList.push_back(obj);
-            nPos = 1;
+            if (nLen == 1)
+            {
+                nPos = 1;
+            }
+            else
+            {
+                nPos = 0;
+            }
         }
     }
     cout << "t_seq:" << t_seq << endl;
@@ -327,6 +334,7 @@ string replaceDNAChars(const string &sequence)
 
 // First level matching function
 void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t, vector<Entity> &matchedEntities)
+
 {
     // Create a map to store the mapping from int to char
     std::map<char, char> intToCharMap;
@@ -356,7 +364,7 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
 
     string misStr = "";
     // Iterate over t_seq
-    for (int i = 0; i <= n_t - k; i++)
+    for (int i = 0; i <= n_t - k;)
     {
         hashValue = 0;
         kMer = t_seq.substr(i, k);
@@ -364,7 +372,7 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
 
         // Check if k-mer's hash value has appeared before
         int pos = H.count(hashValue) ? H[hashValue] : -1;
-        cout << kMer << endl;
+        // cout << kMer << endl;
         if (pos > -1)
         {
             l_max = -1;
@@ -399,32 +407,36 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
             // Find mismatched string
             t_id = i + l_max;
             r_id = pos_max + l_max;
-
+            misStr = "";
             while (t_seq[t_id] != r_seq[r_id] && r_id < r_seq.length() && t_id < t_seq.length()) // find first different letter
             {
                 misStr += intToCharMap[t_seq[t_id]];
                 t_id++;
                 r_id++;
             }
+
             entity.misMatched = misStr;
             matchedEntities.push_back(entity);
             misStr = "";
-            i = t_id - 1;
+            i = t_id;
         }
         else
         {
+            // cout << kMer << endl;
+            //  mismatched string of length k
             misStr = "";
             for (int ind = 0; ind < kMer.length(); ind++)
             {
                 misStr += intToCharMap[kMer[ind]];
             }
-            // mismatched string of length k
+
+            cout << misStr << endl;
             Entity entity;
             entity.misMatched = misStr;
+            misStr = "";
             entity.position = -1;
             entity.length = 0;
             matchedEntities.push_back(entity);
-            misStr = "";
             i += k;
         }
     }
@@ -479,7 +491,7 @@ void secondLevelMatching(const vector<vector<Entity>> &ref_entities_list, vector
             }
 
             Entity newEntity;
-            newEntity.position = entity.position;
+            newEntity.position = newEntity.position;
             newEntity.length = len_max;
 
             if (len_max >= 2)
