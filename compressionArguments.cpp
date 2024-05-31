@@ -142,13 +142,10 @@ void extractTargetFileInfo(string filename, int mt, string &t_seq, vector<CharIn
         printf("Error: fail to open file %s.\n", filename.c_str());
         exit(-1);
     }
-    const size_t bufferSize = 1024;
-    char line[bufferSize];
+    char line[1024];
     string id = "";
-    cout << filename << endl;
     if (fgets(line, sizeof(line), fp) != NULL)
     {
-        cout << "dd" << endl;
         if (line[strlen(line) - 1] == '\n')
         {
             line[strlen(line) - 1] = '\0'; // remove newline
@@ -159,7 +156,6 @@ void extractTargetFileInfo(string filename, int mt, string &t_seq, vector<CharIn
     {
         printf("Error: fail to read a line from file %s.\n", filename.c_str());
     }
-    cout << "b" << endl;
     string lines = "";
     while (fgets(line, sizeof(line), fp) != NULL)
     {
@@ -178,7 +174,6 @@ void extractTargetFileInfo(string filename, int mt, string &t_seq, vector<CharIn
 
     int lowerLen = 0;
     int nLen = 0;
-    int t_len = 0;
 
     // starting position for current sequence of certain type
     int lowerPos = 0;
@@ -218,16 +213,19 @@ void extractTargetFileInfo(string filename, int mt, string &t_seq, vector<CharIn
         if (lines[i] == 'A' || lines[i] == 'T' || lines[i] == 'C' || lines[i] == 'G')
         {
             t_seq += lines[i];
+            nPos++;
+            specialPos++;
         }
         else
         {
             if (lines[i] == 'N')
             {
+                specialPos++;
                 if (!nFlag)
                 {
                     nFlag = true;
                     nLen = 1;
-                    nPos = i - max(nStart, specialStart);
+                    nStart = nPos; // save current position as start
                 }
                 else
                 {
@@ -238,11 +236,13 @@ void extractTargetFileInfo(string filename, int mt, string &t_seq, vector<CharIn
             {
                 if (lines[i] != '\0')
                 {
+                    
                     SpecialChar obj;
-                    obj.position = i - specialStart;
+                    cout <<"spec "<<lines[i]<<" "<<i<<" "<< lines.length()<<" "<<specialPos;
+                    obj.position = specialPos;
                     obj.c = lines[i];
                     specialList.push_back(obj);
-                    specialStart = i + 1;
+                    specialPos=0;
                 }
             }
         }
@@ -257,12 +257,13 @@ void extractTargetFileInfo(string filename, int mt, string &t_seq, vector<CharIn
         }
         if ((lines[i] != 'N' || i == lines.length() - 1) && nFlag)
         {
-            nStart = i;
+            //nStart = i;
             nFlag = false;
             CharInfo obj;
-            obj.position = nPos;
+            obj.position = nStart;
             obj.length = nLen;
             nList.push_back(obj);
+            nPos = 1;
         }
     }
     cout << "t_seq:" << t_seq << endl;
@@ -405,7 +406,6 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
                 t_id++;
                 r_id++;
             }
-
             entity.misMatched = misStr;
             matchedEntities.push_back(entity);
             misStr = "";
@@ -413,13 +413,18 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
         }
         else
         {
-            cout << kMer << endl;
+            misStr = "";
+            for (int ind = 0; ind < kMer.length(); ind++)
+            {
+                misStr += intToCharMap[kMer[ind]];
+            }
             // mismatched string of length k
             Entity entity;
-            entity.misMatched = kMer;
+            entity.misMatched = misStr;
             entity.position = -1;
             entity.length = 0;
             matchedEntities.push_back(entity);
+            misStr = "";
             i += k;
         }
     }

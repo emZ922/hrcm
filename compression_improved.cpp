@@ -841,6 +841,7 @@ void writeDecompressedSequenceToFile(const string &filename, const string &decom
 
     outFile.close();
     cout << "Decompressed sequence written to " << filename << endl;
+
 }
 
 int main()
@@ -862,7 +863,7 @@ int main()
     vector<string> t_seq_int_vec;
     vector<vector<Entity>> matchedEntitiesList;
 
-    for (int i = 0; i < t_filename.size(); i++)
+    for (int i = 1; i < t_filename.size(); i++)
     {
         string t_seq;
         vector<CharInfo> t_lowercaseList;
