@@ -48,7 +48,7 @@ void removeNewline(char *str)
 }
 
 // Extract reference file information
-void extractReferenceFileInfo(const char *&filename, int mr, string &r_seq, vector<LowercaseChar> &lowercaseList)
+void extractReferenceFileInfo(const char *&filename, int &mr, string &r_seq, vector<LowercaseChar> &lowercaseList)
 {
     FILE *fp = fopen(filename, "r");
     if (fp == NULL)
@@ -67,23 +67,25 @@ void extractReferenceFileInfo(const char *&filename, int mr, string &r_seq, vect
         printf("Error: fail to read a line from file %s.\n", filename);
     }
     string lines = "";
+    mr = 0;
     while (fgets(line, sizeof(line), fp) != NULL)
     {
         if (line[strlen(line) - 1] == '\n')
         {
             line[strlen(line) - 1] = '\0';
-        }
+        } 
         lines += line;
     }
 
     fclose(fp);
     lines += '\0';
-    cout << "input:" << lines << endl;
+    //cout << "input:" << lines << endl;
     int l = 0;
     int pos = 0;
     bool counting = false;
     int r_len = 0;
     int start = 0;
+    mr = lines.length();
     for (int i = 0; i < lines.length(); i++)
     {
         if (islower(lines[i]))
@@ -124,16 +126,14 @@ void extractReferenceFileInfo(const char *&filename, int mr, string &r_seq, vect
             lowercaseList.push_back(obj);
         }
     }
-    cout << lines.length() << endl;
-    cout << "r_seq:" << r_seq << endl;
-    for (const auto &item : lowercaseList)
-    {
-        cout << "Position: " << item.position << ", Length: " << item.length << endl;
-    }
+    // for (const auto &item : lowercaseList)
+    // {
+    //     cout << "Position: " << item.position << ", Length: " << item.length << endl;
+    // }
 }
 
 // Extract target file information
-void extractTargetFileInfo(string filename, int mt, string &t_seq, vector<CharInfo> &lowercaseList, vector<CharInfo> &nList, vector<SpecialChar> &specialList)
+void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_seq, vector<CharInfo> &lowercaseList, vector<CharInfo> &nList, vector<SpecialChar> &specialList)
 {
     cout << "Target file info extraction." << endl;
     FILE *fp = fopen(filename.c_str(), "r");
@@ -164,13 +164,17 @@ void extractTargetFileInfo(string filename, int mt, string &t_seq, vector<CharIn
             line[strlen(line) - 1] = '\0';
         }
         lines += line;
+        
     }
 
     fclose(fp);
 
-    cout << "id:" << id << endl;
+    //cout << "id:" << id << endl;
     lines += '\0'; // terminate string
-    cout << "input:" << lines << endl;
+    mt = lines.length();
+    line_width = strlen(line);
+
+    //cout << "input:" << lines << endl;
 
     int lowerLen = 0;
     int nLen = 0;
@@ -238,7 +242,6 @@ void extractTargetFileInfo(string filename, int mt, string &t_seq, vector<CharIn
                 {
 
                     SpecialChar obj;
-                    cout << "spec " << lines[i] << " " << i << " " << lines.length() << " " << specialPos;
                     obj.position = specialPos;
                     obj.c = lines[i];
                     specialList.push_back(obj);
@@ -273,24 +276,24 @@ void extractTargetFileInfo(string filename, int mt, string &t_seq, vector<CharIn
             }
         }
     }
-    cout << "t_seq:" << t_seq << endl;
-    cout << "Lowercase:" << endl;
-    for (const auto &item : lowercaseList)
-    {
-        cout << "Position: " << item.position << ", Length: " << item.length << endl;
-    }
-    cout << endl;
-    cout << "N character:" << endl;
-    for (const auto &item : nList)
-    {
-        cout << "Position: " << item.position << ", Length: " << item.length << endl;
-    }
-    cout << endl;
-    cout << "Special:" << endl;
-    for (const auto &item : specialList)
-    {
-        cout << "Position: " << item.position << ", Character: " << item.c << endl;
-    }
+    // cout << "t_seq:" << t_seq << endl;
+    // cout << "Lowercase:" << endl;
+    // for (const auto &item : lowercaseList)
+    // {
+    //     cout << "Position: " << item.position << ", Length: " << item.length << endl;
+    // }
+    // cout << endl;
+    // cout << "N character:" << endl;
+    // for (const auto &item : nList)
+    // {
+    //     cout << "Position: " << item.position << ", Length: " << item.length << endl;
+    // }
+    // cout << endl;
+    // cout << "Special:" << endl;
+    // for (const auto &item : specialList)
+    // {
+    //     cout << "Position: " << item.position << ", Character: " << item.c << endl;
+    // }
 }
 
 // Hash function for k-mers
@@ -430,7 +433,6 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
                 misStr += intToCharMap[kMer[ind]];
             }
 
-            cout << misStr << endl;
             Entity entity;
             entity.misMatched = misStr;
             misStr = "";
@@ -512,15 +514,15 @@ void secondLevelMatching(const vector<vector<Entity>> &ref_entities_list, vector
 
     to_be_compressed_entities_list = matchedEntitiesList;
 
-    cout << "Output: matched entities (position, length, mismatched) after second level matching" << endl;
-    for (const auto &matchedEntities : matchedEntitiesList)
-    {
-        for (const auto &entity : matchedEntities)
-        {
-            cout << "Position: " << entity.position << ", Length: " << entity.length << endl;
-            cout << "Mismatched: " << entity.misMatched << endl;
-        }
-    }
+    // cout << "Output: matched entities (position, length, mismatched) after second level matching" << endl;
+    // for (const auto &matchedEntities : matchedEntitiesList)
+    // {
+    //     for (const auto &entity : matchedEntities)
+    //     {
+    //         cout << "Position: " << entity.position << ", Length: " << entity.length << endl;
+    //         cout << "Mismatched: " << entity.misMatched << endl;
+    //     }
+    // }
 }
 
 void encodeSequenceInformation(const vector<Entity> &matchedEntities, vector<tuple<int, int, string>> &encodedData)
@@ -564,7 +566,7 @@ void encodeSpecialCharacters(const vector<SpecialChar> &specialList, vector<pair
     }
 }
 
-void writeEncodedDataToFile(const vector<tuple<int, int, string>> &encodedData, const vector<pair<int, char>> &encodedSpecialChars, const vector<CharInfo> &nList, const vector<CharInfo> &lowercaseList, const string &referenceSequence, const string &filename)
+void writeEncodedDataToFile(const vector<tuple<int, int, string>> &encodedData, const vector<pair<int, char>> &encodedSpecialChars, const vector<CharInfo> &nList, const vector<CharInfo> &lowercaseList, const string &referenceSequence, const string &filename, int mt, int line_width)
 {
     ofstream outFile(filename, ios::binary);
     if (!outFile)
@@ -606,6 +608,13 @@ void writeEncodedDataToFile(const vector<tuple<int, int, string>> &encodedData, 
     outFile.write(reinterpret_cast<const char *>(&size), sizeof(size_t));
     outFile.write(referenceSequence.data(), size);
 
+    // Write seq length
+    cout << mt << line_width <<endl;
+    outFile.write(reinterpret_cast<const char *>(&mt), sizeof(int));
+
+    // Write line length
+    outFile.write(reinterpret_cast<const char *>(&line_width), sizeof(int));
+
     outFile.close();
     cout << "Encoded data written to " << filename << endl;
 }
@@ -626,7 +635,7 @@ void writeDecompressedSequenceToFile(const string &filename, const string &decom
     cout << "Decompressed sequence written to " << filename << endl;
 }
 
-void compressSingleFile(const char *ref_filename, const char *tar_filename, int mr, int mt, int k, const string &output_filename)
+void compressSingleFile(const char *ref_filename, const char *tar_filename, int &mr, int &mt, int k, const string &output_filename, int &line_width)
 {
     string r_seq;
     vector<LowercaseChar> r_lowercaseList;
@@ -637,7 +646,7 @@ void compressSingleFile(const char *ref_filename, const char *tar_filename, int 
     vector<CharInfo> t_lowercaseList;
     vector<CharInfo> t_nList;
     vector<SpecialChar> t_specialList;
-    extractTargetFileInfo(tar_filename, mt, t_seq, t_lowercaseList, t_nList, t_specialList);
+    extractTargetFileInfo(tar_filename, mt, line_width, t_seq, t_lowercaseList, t_nList, t_specialList);
     string t_seq_int = replaceDNAChars(t_seq);
 
     vector<Entity> matchedEntities;
@@ -648,10 +657,10 @@ void compressSingleFile(const char *ref_filename, const char *tar_filename, int 
     vector<pair<int, char>> encodedSpecialChars;
     encodeSpecialCharacters(t_specialList, encodedSpecialChars);
 
-    writeEncodedDataToFile(encodedData, encodedSpecialChars, t_nList, t_lowercaseList, r_seq, output_filename);
+    writeEncodedDataToFile(encodedData, encodedSpecialChars, t_nList, t_lowercaseList, r_seq, output_filename, mt, line_width);
 }
 
-void compressMultipleFiles(const char *ref_filename, const char *file_list, int mr, int mt, int k, int percent)
+void compressMultipleFiles(const char *ref_filename, const char *file_list, int mr, int mt, int line_width, int k, int percent)
 {
     string r_seq;
     vector<LowercaseChar> r_lowercaseList;
@@ -685,7 +694,7 @@ void compressMultipleFiles(const char *ref_filename, const char *file_list, int 
         vector<CharInfo> t_lowercaseList;
         vector<CharInfo> t_nList;
         vector<SpecialChar> t_specialList;
-        extractTargetFileInfo(t_filename, mt, t_seq, t_lowercaseList, t_nList, t_specialList);
+        extractTargetFileInfo(t_filename, mt, line_width, t_seq, t_lowercaseList, t_nList, t_specialList);
         string t_seq_int = replaceDNAChars(t_seq);
 
         vector<Entity> matchedEntities;
@@ -707,7 +716,6 @@ void compressMultipleFiles(const char *ref_filename, const char *file_list, int 
         }
         secondLevelMatching(matchedEntitiesList, subset_matchedEntitiesList, k);
     }
-
     for (int i = 0; i < t_filenames.size(); ++i)
     {
         string output_filename = t_filenames[i] + ".7z";
@@ -716,7 +724,7 @@ void compressMultipleFiles(const char *ref_filename, const char *file_list, int 
         vector<pair<int, char>> encodedSpecialChars;
         encodeSpecialCharacters(t_specialList_vec[i], encodedSpecialChars);
 
-        writeEncodedDataToFile(encodedData, encodedSpecialChars, t_nList_vec[i], t_lowercaseList_vec[i], r_seq, output_filename);
+        writeEncodedDataToFile(encodedData, encodedSpecialChars, t_nList_vec[i], t_lowercaseList_vec[i], r_seq, output_filename, mt, line_width);
     }
 }
 
@@ -730,22 +738,23 @@ int main(int argc, char *argv[])
 
     string mode = argv[1];
     const char *ref_filename = argv[3];
-    int k = 2; // k-mer length
-    int mr = 50;
-    int mt = 50;
+    int k = 14; // k-mer length
+    int mr = 0;
+    int mt = 0;
+    int line_width = 0;
 
     if (mode == "compress")
     {
         if (string(argv[4]) == "-t")
         {
             const char *tar_filename = argv[5];
-            compressSingleFile(ref_filename, tar_filename, mr, mt, k, string(tar_filename) + ".7z");
+            compressSingleFile(ref_filename, tar_filename, mr, mt, k, string(tar_filename) + ".7z", line_width);
         }
         else if (string(argv[4]) == "-f")
         {
             const char *file_list = argv[5];
             int percent = (argc > 6) ? stoi(argv[6]) : 10;
-            compressMultipleFiles(ref_filename, file_list, mr, mt, k, percent);
+            compressMultipleFiles(ref_filename, file_list, mr, mt, line_width, k, percent);
         }
         else
         {
