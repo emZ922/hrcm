@@ -73,13 +73,13 @@ void extractReferenceFileInfo(const char *&filename, int &mr, string &r_seq, vec
         if (line[strlen(line) - 1] == '\n')
         {
             line[strlen(line) - 1] = '\0';
-        } 
+        }
         lines += line;
     }
 
     fclose(fp);
     lines += '\0';
-    //cout << "input:" << lines << endl;
+    // cout << "input:" << lines << endl;
     int l = 0;
     int pos = 0;
     bool counting = false;
@@ -157,24 +157,27 @@ void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_
         printf("Error: fail to read a line from file %s.\n", filename.c_str());
     }
     string lines = "";
+    int i = 0;
     while (fgets(line, sizeof(line), fp) != NULL)
     {
+        if (i == 0) {
+            i = 1;
+            line_width = strlen(line)-1;
+        }
         if (line[strlen(line) - 1] == '\n')
         {
             line[strlen(line) - 1] = '\0';
         }
         lines += line;
-        
     }
 
     fclose(fp);
 
-    //cout << "id:" << id << endl;
+    // cout << "id:" << id << endl;
     lines += '\0'; // terminate string
     mt = lines.length();
-    line_width = strlen(line);
 
-    //cout << "input:" << lines << endl;
+    // cout << "input:" << lines << endl;
 
     int lowerLen = 0;
     int nLen = 0;
@@ -195,7 +198,7 @@ void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_
     int nStart = 0;
 
     bool isUpper = false;
-    for (int i = 0; i < lines.length(); i++)
+    for (i = 0; i < lines.length(); i++)
     {
         isUpper = true;
         if (islower(lines[i]))
@@ -366,13 +369,15 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
     }
 
     string misStr = "";
+    //cout << t_seq << endl;
+    //cout << r_seq << endl;
     // Iterate over t_seq
-    for (int i = 0; i <= n_t - k;)
+    int i;
+    for (i = 0; i <= n_t - k;)
     {
         hashValue = 0;
         kMer = t_seq.substr(i, k);
         hashValue = hashFunction(kMer);
-
         // Check if k-mer's hash value has appeared before
         int pos = H.count(hashValue) ? H[hashValue] : -1;
         // cout << kMer << endl;
@@ -442,6 +447,25 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
             i += k;
         }
     }
+    if (i < n_t)
+    {
+        kMer = t_seq.substr(i, n_t);
+        misStr = "";
+        for (int ind = 0; ind < kMer.length(); ind++)
+        {
+            misStr += intToCharMap[kMer[ind]];
+        }
+        Entity entity;
+        entity.misMatched = misStr;
+        entity.position = -1;
+        entity.length = 0;
+        matchedEntities.push_back(entity);
+    }
+    // for (const auto &entity : matchedEntities)
+    // {
+    //     cout << entity.position << entity.misMatched << entity.length << endl;
+    // }
+    //cout << "f" << endl;
 }
 
 // Second level matching function
@@ -609,7 +633,7 @@ void writeEncodedDataToFile(const vector<tuple<int, int, string>> &encodedData, 
     outFile.write(referenceSequence.data(), size);
 
     // Write seq length
-    cout << mt << line_width <<endl;
+    cout << mt << line_width << endl;
     outFile.write(reinterpret_cast<const char *>(&mt), sizeof(int));
 
     // Write line length
@@ -648,7 +672,7 @@ void compressSingleFile(const char *ref_filename, const char *tar_filename, int 
     vector<SpecialChar> t_specialList;
     extractTargetFileInfo(tar_filename, mt, line_width, t_seq, t_lowercaseList, t_nList, t_specialList);
     string t_seq_int = replaceDNAChars(t_seq);
-
+    cout << "line" <<line_width <<endl;
     vector<Entity> matchedEntities;
     firstLevelMatching(r_seq_int, k, t_seq_int, t_seq_int.length(), matchedEntities);
 
