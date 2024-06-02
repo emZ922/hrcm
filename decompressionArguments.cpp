@@ -173,7 +173,6 @@ string decompressData(const string &encodedFilename, const char *ref_filename, i
     {
         str[start++] = tempSeq[i];
     }
-    cout << 8 << endl;
 
     //  Add 'N' characters
     start = 0;

@@ -135,7 +135,6 @@ void extractReferenceFileInfo(const char *&filename, int &mr, string &r_seq, vec
 // Extract target file information
 void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_seq, string &id, vector<CharInfo> &lowercaseList, vector<CharInfo> &nList, vector<SpecialChar> &specialList)
 {
-    cout << "Target file info extraction." << endl;
     FILE *fp = fopen(filename.c_str(), "r");
     if (fp == NULL)
     {
@@ -174,11 +173,9 @@ void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_
 
     fclose(fp);
 
-    // cout << "id:" << id << endl;
     lines += '\0'; // terminate string
     mt = lines.length();
 
-    // cout << "input:" << lines << endl;
 
     int lowerLen = 0;
     int nLen = 0;
@@ -599,7 +596,6 @@ void writeEncodedDataToFile(const vector<tuple<int, int, string>> &encodedData, 
     outFile.write(referenceSequence.data(), size);
 
     // Write seq length
-    cout << mt << line_width << endl;
     outFile.write(reinterpret_cast<const char *>(&mt), sizeof(int));
 
     // Write line length
@@ -714,7 +710,7 @@ void compressMultipleFiles(const char *ref_filename, const char *file_list, int 
     }
     for (int i = 0; i < t_filenames.size(); ++i)
     {
-        string output_filename = t_filenames[i] + ".7z";
+        string output_filename = t_filenames[i] + ".bin";
         vector<tuple<int, int, string>> encodedData;
         encodeSequenceInformation(matchedEntitiesList[i], encodedData);
         vector<pair<int, char>> encodedSpecialChars;
@@ -745,7 +741,7 @@ int main(int argc, char *argv[])
         if (string(argv[4]) == "-t")
         {
             const char *tar_filename = argv[5];
-            compressSingleFile(ref_filename, tar_filename, mr, mt, k, string(tar_filename) + ".7z", line_width);
+            compressSingleFile(ref_filename, tar_filename, mr, mt, k, string(tar_filename).substr(0, string(tar_filename).find_last_of('.')) + ".bin", line_width);
         }
         else if (string(argv[4]) == "-f")
         {
