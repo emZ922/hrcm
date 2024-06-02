@@ -67,7 +67,8 @@ void extractReferenceFileInfo(const char *&filename, int &mr, string &r_seq, vec
         printf("Error: fail to read a line from file %s.\n", filename);
     }
     string lines = "";
-    mr = 0;
+
+    // Read line by line, ignore newline
     while (fgets(line, sizeof(line), fp) != NULL)
     {
         if (line[strlen(line) - 1] == '\n')
@@ -79,7 +80,6 @@ void extractReferenceFileInfo(const char *&filename, int &mr, string &r_seq, vec
 
     fclose(fp);
     lines += '\0';
-    // cout << "input:" << lines << endl;
     int l = 0;
     int pos = 0;
     bool counting = false;
@@ -126,14 +126,10 @@ void extractReferenceFileInfo(const char *&filename, int &mr, string &r_seq, vec
             lowercaseList.push_back(obj);
         }
     }
-    // for (const auto &item : lowercaseList)
-    // {
-    //     cout << "Position: " << item.position << ", Length: " << item.length << endl;
-    // }
 }
 
 // Extract target file information
-void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_seq, vector<CharInfo> &lowercaseList, vector<CharInfo> &nList, vector<SpecialChar> &specialList)
+void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_seq, string &id, vector<CharInfo> &lowercaseList, vector<CharInfo> &nList, vector<SpecialChar> &specialList)
 {
     cout << "Target file info extraction." << endl;
     FILE *fp = fopen(filename.c_str(), "r");
@@ -143,7 +139,7 @@ void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_
         exit(-1);
     }
     char line[1024];
-    string id = "";
+    id = "";
     if (fgets(line, sizeof(line), fp) != NULL)
     {
         if (line[strlen(line) - 1] == '\n')
@@ -270,34 +266,9 @@ void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_
             obj.position = nStart;
             obj.length = nLen;
             nList.push_back(obj);
-            if (nLen == 1)
-            {
-                nPos = 1;
-            }
-            else
-            {
-                nPos = 1;
-            }
+            nPos = 1;
         }
     }
-    // cout << "t_seq:" << t_seq << endl;
-    // cout << "Lowercase:" << endl;
-    // for (const auto &item : lowercaseList)
-    // {
-    //     cout << "Position: " << item.position << ", Length: " << item.length << endl;
-    // }
-    // cout << endl;
-    // cout << "N character:" << endl;
-    // for (const auto &item : nList)
-    // {
-    //     cout << "Position: " << item.position << ", Length: " << item.length << endl;
-    // }
-    // cout << endl;
-    // cout << "Special:" << endl;
-    // for (const auto &item : specialList)
-    // {
-    //     cout << "Position: " << item.position << ", Character: " << item.c << endl;
-    // }
 }
 
 // Hash function for k-mers
@@ -372,11 +343,10 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
     }
 
     string misStr = "";
-    // cout << t_seq << endl;
-    // cout << r_seq << endl;
+
     //  Iterate over t_seq
     int i;
-    int kLen=0;
+    int kLen = 0;
     for (i = 0; i <= n_t - k;)
     {
         hashValue = 0;
@@ -384,7 +354,6 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
         hashValue = hashFunction(kMer);
         // Check if k-mer's hash value has appeared before
         int pos = H.count(hashValue) ? H[hashValue] : -1;
-        // cout << kMer << endl;
         if (pos > -1)
         {
             l_max = -1;
@@ -434,7 +403,6 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
         }
         else
         {
-            // cout << kMer << endl;
             //  mismatched string of length k
             misStr = "";
             kLen = kMer.length();
@@ -467,11 +435,6 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
         entity.length = 0;
         matchedEntities.push_back(entity);
     }
-    // for (const auto &entity : matchedEntities)
-    // {
-    //     cout << entity.position << entity.misMatched << entity.length << endl;
-    // }
-    // cout << "f" << endl;
 }
 
 // Second level matching function
@@ -543,16 +506,6 @@ void secondLevelMatching(const vector<vector<Entity>> &ref_entities_list, vector
     }
 
     to_be_compressed_entities_list = matchedEntitiesList;
-
-    // cout << "Output: matched entities (position, length, mismatched) after second level matching" << endl;
-    // for (const auto &matchedEntities : matchedEntitiesList)
-    // {
-    //     for (const auto &entity : matchedEntities)
-    //     {
-    //         cout << "Position: " << entity.position << ", Length: " << entity.length << endl;
-    //         cout << "Mismatched: " << entity.misMatched << endl;
-    //     }
-    // }
 }
 
 void encodeSequenceInformation(const vector<Entity> &matchedEntities, vector<tuple<int, int, string>> &encodedData)
@@ -596,7 +549,7 @@ void encodeSpecialCharacters(const vector<SpecialChar> &specialList, vector<pair
     }
 }
 
-void writeEncodedDataToFile(const vector<tuple<int, int, string>> &encodedData, const vector<pair<int, char>> &encodedSpecialChars, const vector<CharInfo> &nList, const vector<CharInfo> &lowercaseList, const string &referenceSequence, const string &filename, int mt, int line_width)
+void writeEncodedDataToFile(const vector<tuple<int, int, string>> &encodedData, const vector<pair<int, char>> &encodedSpecialChars, const vector<CharInfo> &nList, const vector<CharInfo> &lowercaseList, const string &referenceSequence, const string &filename, const string &id, int mt, int line_width)
 {
     ofstream outFile(filename, ios::binary);
     if (!outFile)
@@ -645,6 +598,11 @@ void writeEncodedDataToFile(const vector<tuple<int, int, string>> &encodedData, 
     // Write line length
     outFile.write(reinterpret_cast<const char *>(&line_width), sizeof(int));
 
+    // Write sequence id
+    size = id.size();
+    outFile.write(reinterpret_cast<const char *>(&size), sizeof(size_t));
+    outFile.write(id.data(), size);
+
     outFile.close();
     cout << "Encoded data written to " << filename << endl;
 }
@@ -673,12 +631,12 @@ void compressSingleFile(const char *ref_filename, const char *tar_filename, int 
     string r_seq_int = replaceDNAChars(r_seq);
 
     string t_seq;
+    string id;
     vector<CharInfo> t_lowercaseList;
     vector<CharInfo> t_nList;
     vector<SpecialChar> t_specialList;
-    extractTargetFileInfo(tar_filename, mt, line_width, t_seq, t_lowercaseList, t_nList, t_specialList);
+    extractTargetFileInfo(tar_filename, mt, line_width, t_seq, id, t_lowercaseList, t_nList, t_specialList);
     string t_seq_int = replaceDNAChars(t_seq);
-    cout << "line" << line_width << endl;
     vector<Entity> matchedEntities;
     firstLevelMatching(r_seq_int, k, t_seq_int, t_seq_int.length(), matchedEntities);
 
@@ -687,7 +645,7 @@ void compressSingleFile(const char *ref_filename, const char *tar_filename, int 
     vector<pair<int, char>> encodedSpecialChars;
     encodeSpecialCharacters(t_specialList, encodedSpecialChars);
 
-    writeEncodedDataToFile(encodedData, encodedSpecialChars, t_nList, t_lowercaseList, r_seq, output_filename, mt, line_width);
+    writeEncodedDataToFile(encodedData, encodedSpecialChars, t_nList, t_lowercaseList, r_seq, output_filename, id, mt, line_width);
 }
 
 void compressMultipleFiles(const char *ref_filename, const char *file_list, int mr, int mt, int line_width, int k, int percent)
@@ -724,7 +682,8 @@ void compressMultipleFiles(const char *ref_filename, const char *file_list, int 
         vector<CharInfo> t_lowercaseList;
         vector<CharInfo> t_nList;
         vector<SpecialChar> t_specialList;
-        extractTargetFileInfo(t_filename, mt, line_width, t_seq, t_lowercaseList, t_nList, t_specialList);
+        string id;
+        extractTargetFileInfo(t_filename, mt, line_width, t_seq, id, t_lowercaseList, t_nList, t_specialList);
         string t_seq_int = replaceDNAChars(t_seq);
 
         vector<Entity> matchedEntities;
@@ -754,7 +713,7 @@ void compressMultipleFiles(const char *ref_filename, const char *file_list, int 
         vector<pair<int, char>> encodedSpecialChars;
         encodeSpecialCharacters(t_specialList_vec[i], encodedSpecialChars);
 
-        writeEncodedDataToFile(encodedData, encodedSpecialChars, t_nList_vec[i], t_lowercaseList_vec[i], r_seq, output_filename, mt, line_width);
+        writeEncodedDataToFile(encodedData, encodedSpecialChars, t_nList_vec[i], t_lowercaseList_vec[i], r_seq, output_filename, "", mt, line_width);
     }
 }
 
