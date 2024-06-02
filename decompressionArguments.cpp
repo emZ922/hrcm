@@ -7,6 +7,8 @@
 #include <cctype>
 #include <cstdlib>
 #include <cmath>
+#include <sys/time.h>  //Linux
+
 #include <string.h>
 
 using namespace std;
@@ -153,7 +155,7 @@ string decompressData(const string &encodedFilename, const char *ref_filename, i
         // start = start + entity.misMatched.length();
     }
     tempSeq[start] = '\0';
-    //cout << "f:" << tempSeq << endl;
+    // cout << "f:" << tempSeq << endl;
     char *str = new char[mt];
     read = 0;
     start = 0;
@@ -175,9 +177,8 @@ string decompressData(const string &encodedFilename, const char *ref_filename, i
     {
         str[start++] = tempSeq[i];
     }
-    cout << 8<<endl;
-    //cout << "s:" << str <<endl;
-
+    cout << 8 << endl;
+    // cout << "s:" << str <<endl;
 
     //  Add 'N' characters
     start = 0;
@@ -198,30 +199,30 @@ string decompressData(const string &encodedFilename, const char *ref_filename, i
         }
         // start = start + nChar.length;
     }
-    //cout << mt << " " << strlen(tempSeq) << " " << strlen(str) << endl;
-
-    for (i = read; i < strlen(str); i++)
+    // cout << mt << " " << strlen(tempSeq) << " " << strlen(str) << endl;
+    int strLen = strlen(str);
+    for (i = read; i < strLen; i++)
     {
         decompressedSequence1[start++] = str[i];
         // cout << i <<endl;
     }
     // str[start] = '\0';
-    //cout << "n:" << decompressedSequence1 <<endl;
+    // cout << "n:" << decompressedSequence1 <<endl;
 
     int str_len = start;
 
     str[mt] = '\0';
 
-    //cout << "N:" << strlen(str) << endl;
-    //  Reconstruct special characters
+    // cout << "N:" << strlen(str) << endl;
+    //   Reconstruct special characters
     int pos = 0;
     start = 0;
     read = 0;
 
-    //strcpy();
-    // cout << "s:" << decompressedSequence1 << endl;
-    //   Reconstruct lowercase characters
-    cout <<56<<endl;
+    // strcpy();
+    //  cout << "s:" << decompressedSequence1 << endl;
+    //    Reconstruct lowercase characters
+    cout << 56 << endl;
     start = 0;
     for (const auto &lowercase : lowercaseList)
     {
@@ -252,7 +253,7 @@ string decompressData(const string &encodedFilename, const char *ref_filename, i
     decompressedSequence[start] = '\0';
 
     cout << "o:" << "GGCTGXGCCggtttnAAAGGnnXXXTTXCNNNaaaTTTccACGTTTCTGT" << endl;
-    //cout << "d:" << decompressedSequence << endl;
+    // cout << "d:" << decompressedSequence << endl;
     cout << "o:" << "AGCTGGGCCCTTaaggtttnnnXXXTTTCCCGGGNNNaaaTTTccctttg" << endl;
 
     delete[] str;
@@ -320,6 +321,11 @@ int main(int argc, char *argv[])
     const char *ref_filename = argv[3];
     int mt = 0;
     int line_width = 0;
+
+    struct timeval start_time;
+    struct timeval end_time;
+    unsigned long timer;
+    gettimeofday(&start_time, NULL);
     if (mode == "decompress")
     {
         if (string(argv[4]) == "-t")
@@ -343,6 +349,9 @@ int main(int argc, char *argv[])
         cerr << "Invalid mode: " << mode << endl;
         return 1;
     }
-
+    
+    gettimeofday(&end_time, NULL);
+    timer = 1000000 * (end_time.tv_sec - start_time.tv_sec) + end_time.tv_usec - start_time.tv_usec;
+    printf("Total decompression time = %lf ms; %lf s\n", timer / 1000.0, timer / 1000.0 / 1000.0);
     return 0;
 }
