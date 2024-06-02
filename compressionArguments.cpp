@@ -86,7 +86,7 @@ void extractReferenceFileInfo(const char *&filename, int &mr, string &r_seq, vec
     int r_len = 0;
     int start = 0;
     mr = lines.length();
-    for (int i = 0; i < lines.length(); i++)
+    for (int i = 0; i < mr; i++)
     {
         if (islower(lines[i]))
         {
@@ -118,7 +118,7 @@ void extractReferenceFileInfo(const char *&filename, int &mr, string &r_seq, vec
         {
             r_seq += lines[i];
         }
-        if (i == lines.length() - 1 && counting)
+        if (i == mr - 1 && counting)
         {
             LowercaseChar obj;
             obj.position = pos;
@@ -160,9 +160,10 @@ void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_
     int i = 0;
     while (fgets(line, sizeof(line), fp) != NULL)
     {
-        if (i == 0) {
+        if (i == 0)
+        {
             i = 1;
-            line_width = strlen(line)-1;
+            line_width = strlen(line) - 1;
         }
         if (line[strlen(line) - 1] == '\n')
         {
@@ -196,9 +197,9 @@ void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_
     int lowerStart = 0;
     int specialStart = 0;
     int nStart = 0;
-
+    int linesLen = lines.length();
     bool isUpper = false;
-    for (i = 0; i < lines.length(); i++)
+    for (i = 0; i < linesLen; i++)
     {
         isUpper = true;
         if (islower(lines[i]))
@@ -227,7 +228,7 @@ void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_
         {
             if (lines[i] == 'N')
             {
-                specialPos++;
+                // specialPos++;
                 if (!nFlag)
                 {
                     nFlag = true;
@@ -241,9 +242,9 @@ void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_
             }
             else
             {
-                if (lines[i] != '\0')
+                if (lines[i] != '\0') // special character
                 {
-
+                    nPos++;
                     SpecialChar obj;
                     obj.position = specialPos;
                     obj.c = lines[i];
@@ -252,7 +253,7 @@ void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_
                 }
             }
         }
-        if ((isUpper || i == lines.length() - 1) && lowerFlag)
+        if ((isUpper || i == linesLen - 1) && lowerFlag)
         {
             lowerStart = i;
             lowerFlag = false;
@@ -261,7 +262,7 @@ void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_
             obj.length = lowerLen;
             lowercaseList.push_back(obj);
         }
-        if ((lines[i] != 'N' || i == lines.length() - 1) && nFlag)
+        if ((lines[i] != 'N' || i == linesLen - 1) && nFlag)
         {
             // nStart = i;
             nFlag = false;
@@ -275,7 +276,7 @@ void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_
             }
             else
             {
-                nPos = 0;
+                nPos = 1;
             }
         }
     }
@@ -303,7 +304,8 @@ void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_
 int hashFunction(const string &kMer)
 {
     int hashValue = kMer[0] - '0';
-    for (int i = 1; i < kMer.length(); i++)
+    int k = kMer.length();
+    for (int i = 1; i < k; i++)
     {
         hashValue = hashValue * 4 + kMer[i] - '0';
     }
@@ -353,15 +355,16 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
     int pos_max = 0;
 
     unordered_map<int, int> H;
-    vector<int> L(r_seq.length(), -1); // Initialize array L with -1
+    int rLen = r_seq.length();
+
+    vector<int> L(rLen, -1); // Initialize array L with -1
     int hashValue = 0;
     string kMer = r_seq.substr(0, k);
     hashValue = hashFunction(kMer);
     L[0] = H.count(0) ? H[0] : -1; // Act as if all H values are -1
     H[hashValue] = 0;
-
     // Create hash table for reference B sequence
-    for (int i = 1; i <= r_seq.length() - k; i++)
+    for (int i = 1; i <= rLen - k; i++)
     {
         hashValue = hashFunction(r_seq.substr(i, k));
         L[i] = H.count(hashValue) ? H[hashValue] : -1;
@@ -369,10 +372,11 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
     }
 
     string misStr = "";
-    //cout << t_seq << endl;
-    //cout << r_seq << endl;
-    // Iterate over t_seq
+    // cout << t_seq << endl;
+    // cout << r_seq << endl;
+    //  Iterate over t_seq
     int i;
+    int kLen=0;
     for (i = 0; i <= n_t - k;)
     {
         hashValue = 0;
@@ -395,7 +399,7 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
                 r_id = j + k;
                 t_id = i + k;
 
-                while (t_id < n_t && r_id < r_seq.length() && t_id < t_seq.length() && t_seq[t_id++] == r_seq[r_id++])
+                while (t_id < n_t && r_id < rLen && t_id < n_t && t_seq[t_id++] == r_seq[r_id++])
                 {
                     l++;
                 }
@@ -416,7 +420,7 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
             t_id = i + l_max;
             r_id = pos_max + l_max;
             misStr = "";
-            while (t_seq[t_id] != r_seq[r_id] && r_id < r_seq.length() && t_id < t_seq.length()) // find first different letter
+            while (t_seq[t_id] != r_seq[r_id] && r_id < rLen && t_id < n_t) // find first different letter
             {
                 misStr += intToCharMap[t_seq[t_id]];
                 t_id++;
@@ -433,7 +437,8 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
             // cout << kMer << endl;
             //  mismatched string of length k
             misStr = "";
-            for (int ind = 0; ind < kMer.length(); ind++)
+            kLen = kMer.length();
+            for (int ind = 0; ind < kLen; ind++)
             {
                 misStr += intToCharMap[kMer[ind]];
             }
@@ -451,7 +456,8 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
     {
         kMer = t_seq.substr(i, n_t);
         misStr = "";
-        for (int ind = 0; ind < kMer.length(); ind++)
+        kLen = kMer.length();
+        for (int ind = 0; ind < kLen; ind++)
         {
             misStr += intToCharMap[kMer[ind]];
         }
@@ -465,7 +471,7 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
     // {
     //     cout << entity.position << entity.misMatched << entity.length << endl;
     // }
-    //cout << "f" << endl;
+    // cout << "f" << endl;
 }
 
 // Second level matching function
@@ -672,7 +678,7 @@ void compressSingleFile(const char *ref_filename, const char *tar_filename, int 
     vector<SpecialChar> t_specialList;
     extractTargetFileInfo(tar_filename, mt, line_width, t_seq, t_lowercaseList, t_nList, t_specialList);
     string t_seq_int = replaceDNAChars(t_seq);
-    cout << "line" <<line_width <<endl;
+    cout << "line" << line_width << endl;
     vector<Entity> matchedEntities;
     firstLevelMatching(r_seq_int, k, t_seq_int, t_seq_int.length(), matchedEntities);
 
