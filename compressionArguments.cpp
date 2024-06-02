@@ -11,6 +11,7 @@
 
 using namespace std;
 
+// @ema
 // Structures to hold information
 struct LowercaseChar
 {
@@ -47,6 +48,8 @@ void removeNewline(char *str)
     }
 }
 
+
+// @ema
 // Extract reference file information
 void extractReferenceFileInfo(const char *&filename, int &mr, string &r_seq, vector<LowercaseChar> &lowercaseList)
 {
@@ -128,6 +131,7 @@ void extractReferenceFileInfo(const char *&filename, int &mr, string &r_seq, vec
     }
 }
 
+// @ema
 // Extract target file information
 void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_seq, string &id, vector<CharInfo> &lowercaseList, vector<CharInfo> &nList, vector<SpecialChar> &specialList)
 {
@@ -271,6 +275,7 @@ void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_
     }
 }
 
+// @ema
 // Hash function for k-mers
 int hashFunction(const string &kMer)
 {
@@ -283,6 +288,7 @@ int hashFunction(const string &kMer)
     return hashValue;
 }
 
+// @ema
 // Replace DNA characters with integers
 string replaceDNAChars(const string &sequence)
 {
@@ -311,7 +317,8 @@ string replaceDNAChars(const string &sequence)
     return modifiedSequence;
 }
 
-// First level matching function
+// @ema
+// Performs first level matching on base sequences of reference and target genome
 void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t, vector<Entity> &matchedEntities)
 
 {
@@ -717,6 +724,7 @@ void compressMultipleFiles(const char *ref_filename, const char *file_list, int 
     }
 }
 
+// the main function
 int main(int argc, char *argv[])
 {
     if (argc < 5)

@@ -119,6 +119,7 @@ void decodeSequenceInformation(const vector<tuple<int, int, string>> &encodedDat
     }
 }
 
+// @ema
 // Function to decompress data
 string decompressData(const string &encodedFilename, const char *ref_filename, int &mt, int &line_width, string &id)
 {
