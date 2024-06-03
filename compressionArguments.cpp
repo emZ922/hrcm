@@ -6,6 +6,7 @@
 #include <map>
 #include <algorithm>
 #include <cctype>
+#include <sys/time.h>
 #include <cstdlib>
 #include <cstring>
 
@@ -48,7 +49,6 @@ void removeNewline(char *str)
     }
 }
 
-
 // @ema
 // Extract reference file information
 void extractReferenceFileInfo(const char *&filename, int &mr, string &r_seq, vector<LowercaseChar> &lowercaseList)
@@ -86,7 +86,6 @@ void extractReferenceFileInfo(const char *&filename, int &mr, string &r_seq, vec
     int l = 0;
     int pos = 0;
     bool counting = false;
-    int r_len = 0;
     int start = 0;
     mr = lines.length();
     for (int i = 0; i < mr; i++)
@@ -176,7 +175,6 @@ void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_
     lines += '\0'; // terminate string
     mt = lines.length();
 
-
     int lowerLen = 0;
     int nLen = 0;
 
@@ -187,12 +185,10 @@ void extractTargetFileInfo(string filename, int &mt, int &line_width, string &t_
 
     // flags determine whether we are counting certain type of characters
     bool lowerFlag = false;
-    bool specialFlag = false;
     bool nFlag = false;
 
     // starting position for last sequence of certain type
     int lowerStart = 0;
-    int specialStart = 0;
     int nStart = 0;
     int linesLen = lines.length();
     bool isUpper = false;
@@ -280,7 +276,7 @@ int hashFunction(const string &kMer)
     int k = kMer.length();
     for (int i = 1; i < k; i++)
     {
-        hashValue = hashValue * 4 + kMer[i] - '0';
+        hashValue = (hashValue << 2) + (kMer[i] - '0');
     }
     return hashValue;
 }
@@ -317,7 +313,6 @@ string replaceDNAChars(const string &sequence)
 // @ema
 // Performs first level matching on base sequences of reference and target genome
 void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t, vector<Entity> &matchedEntities)
-
 {
     // Create a map to store the mapping from int to char
     std::map<char, char> intToCharMap;
@@ -353,9 +348,9 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
     int kLen = 0;
     for (i = 0; i <= n_t - k;)
     {
-        hashValue = 0;
         kMer = t_seq.substr(i, k);
         hashValue = hashFunction(kMer);
+
         // Check if k-mer's hash value has appeared before
         int pos = H.count(hashValue) ? H[hashValue] : -1;
         if (pos > -1)
@@ -368,7 +363,6 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
             while (j != -1)
             {
                 int l = k;
-                int p = pos;
                 r_id = j + k;
                 t_id = i + k;
 
@@ -426,12 +420,10 @@ void firstLevelMatching(const string &r_seq, int k, const string &t_seq, int n_t
     }
     if (i < n_t)
     {
-        kMer = t_seq.substr(i, n_t);
         misStr = "";
-        kLen = kMer.length();
-        for (int ind = 0; ind < kLen; ind++)
+        for (int ind = i; ind < n_t; ind++)
         {
-            misStr += intToCharMap[kMer[ind]];
+            misStr += intToCharMap[t_seq[ind]];
         }
         Entity entity;
         entity.misMatched = misStr;

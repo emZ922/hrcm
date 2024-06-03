@@ -42,7 +42,6 @@ void readEncodedDataFromFile(const string &filename, vector<tuple<int, int, stri
         exit(1);
     }
 
-    int data;
     size_t size;
 
     // Read encoded data
@@ -140,7 +139,7 @@ string decompressData(const string &encodedFilename, const char *ref_filename, i
     //  Reconstruct the base sequence using the matched entities
     int start = 0;
     int read = 0;
-    int i, j;
+    int i, j, misLen;
 
     for (const auto &entity : matchedEntities)
     {
@@ -150,7 +149,8 @@ string decompressData(const string &encodedFilename, const char *ref_filename, i
             tempSeq[start++] = referenceSequence[read + i];
         }
         //  Handle mismatched portion if necessary
-        for (j = 0; j < entity.misMatched.length(); j++)
+        misLen = entity.misMatched.length();
+        for (j = 0; j < misLen; j++)
         {
             tempSeq[start++] = entity.misMatched[j];
         }
